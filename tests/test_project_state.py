@@ -55,6 +55,7 @@ class InitTests(unittest.TestCase):
     def test_host_matrix_defaults(self):
         cases = {
             "dsh": True,
+            "opencode": True,
             "codex": True,
             "workbuddy": False,
             "other": False,

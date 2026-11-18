@@ -32,7 +32,7 @@ STAGES = (
 
 STATUSES = ("未开始", "进行中", "待确认", "已确认", "需要返工", "已跳过")
 
-HOSTS = ("dsh", "codex", "workbuddy", "other")
+HOSTS = ("dsh", "opencode", "codex", "workbuddy", "other")
 
 CAPABILITY_KEYS = (
     "local_files",
@@ -46,7 +46,7 @@ CAPABILITY_KEYS = (
     "render",
 )
 
-HOST_LOCAL_FILES = {"dsh": True, "codex": True, "workbuddy": False, "other": False}
+HOST_LOCAL_FILES = {"dsh": True, "opencode": True, "codex": True, "workbuddy": False, "other": False}
 
 PROJECT_DIRS = (
     "writing-pack",

@@ -59,10 +59,36 @@ photorealistic film still from a historical drama, real actor, natural skin text
 
 **Qing screen baseline** (when the subject is Qing): shaved forehead with a queue, court hat with a finial, horse-hoof cuffs, court beads, rank badge on the surcoat, cloth that wrinkles and shows wear. State the rank and the occasion; a Qing emperor in daily dress is not in full ceremonial yellow.
 
+### 清装必须写形状，不能只写"清代"
+
+`清代官员`、`清宫朝服`、`古装` 这几个词在图像模型里是**弱锚点**：训练数据里"中国古代官员"压倒性地是明制，只给朝代名，回来的是乌纱帽、展角、束发、道袍。实测 2026-11-18 一条 15 分钟清代片子，74 条提示词里有 33 条命中这条，全部集中在"官员/人影/官服"这种只写身份、没写形状的句子上。
+
+规则：**句中有人物，就必须同时给出帽型、发式、袍式三件**，每件用可画的形状词，而不是等级词。
+
+| 项 | 可画的正向词 | 不要只写 |
+|---|---|---|
+| 帽 | 圆锥形凉帽、帽檐上翻的暖帽、帽顶红缨与顶珠、圆锥帽配花翎 | 顶戴花翎、官帽 |
+| 发 | 前额剃光、脑后一条辫子、额前无发、头顶无发髻 | 清代发式 |
+| 袍 | 圆领对襟补褂、胸前方形补子、马蹄袖、颈挂朝珠、披领 | 清代官服 |
+
+**可直接粘贴的锚点块**（按角色取一行，接在人物句后）：
+
+```
+官员（朝会）：身穿石青色圆领对襟补褂，胸前方形仙鹤补子，颈挂朝珠，头戴圆锥形暖帽，帽檐上翻，帽顶红缨与顶珠，前额剃光，脑后垂一条辫子，袖口马蹄袖
+官员（日常/便服）：深蓝色长衫外罩马褂，头戴瓜皮帽，前额剃光，脑后垂一条辫子，脚穿黑布鞋
+皇帝：明黄色常服袍，马蹄袖，腰系明黄带，头戴圆锥形朝冠，帽顶东珠，前额剃光，脑后垂一条辫子
+旗人女子：两把头，氅衣阔镶边，立领大襟
+太监/差役：青色短褂，瓜皮帽，前额剃光，脑后垂一条辫子
+```
+
+**反向也要写死**：帽子写成"圆锥、上翻、红缨"，模型就不会画展角；写"前额剃光、头顶无发髻"，就不会画束发。否定清单（`no Ming hat` 一类）在 CFG 1 下经常被忽略，只能当补刀，不能当主锁。
+
+**改稿也要重跑**：加过锚点的提示词先过 `python3 scripts/era_lint.py <prompts-dir> --era qing`，退出码 0 再进批量。lint 只看提示词文本，不看图，所以它拦的是"注定画错"的提示词，不是"已经画错"的图。
+
 **Negative list** (add to the project's era negatives, not instead of them):
 
 ```
-plastic skin, airbrushed face, beauty filter, doll face, wax figure, CGI, 3D render, anime, cosplay, extra fingers, fused fingers, deformed hands, modern makeup, contact lenses, veneers, bodybuilder physique, brand-new costume, costume-shop sheen, Ming dynasty clothing, Japanese clothing, Western clothing
+plastic skin, airbrushed face, beauty filter, doll face, wax figure, CGI, 3D render, anime, cosplay, extra fingers, fused fingers, deformed hands, modern makeup, contact lenses, veneers, bodybuilder physique, brand-new costume, costume-shop sheen, Ming dynasty clothing, Ming official cap, black gauze hat with wing flaps, topknot, hair bun, cross-collar robe, Japanese clothing, Western clothing
 ```
 
 A group shot needs `distinct faces, real casting, no repeated face`. A hands-visible shot needs `hands relaxed and anatomically correct`; hands are the cheapest realism check and the first thing a viewer notices.
@@ -80,3 +106,11 @@ A group shot needs `distinct faces, real casting, no repeated face`. A hands-vis
 ## QC before batch
 
 For each pilot image check: count, action, era, character identity, text, exposure, and whether the three planes are actually visible. For realism, check skin texture, hands, hairline, fabric wear, and whether the face looks like a photograph of a person rather than a render. For Qing, check the screen baseline: shaved forehead, queue, hat, cuffs, beads, rank badge. A missing action, wrong count, wrong dynasty, plastic face, or malformed hand is a replacement-level defect; a slightly dark frame is a grade adjustment.
+
+**判朝代先判帽子。** 乌纱帽、展角幞头、梁冠、束发髻、交领道袍，任一件出现就是明代或更早，不是"风格接近"，也不是"过场镜头可以接受"——观众认朝代靠的就是头。提示词层面先用 lint 拦一遍：
+
+```
+python3 scripts/era_lint.py images/prompts --era qing
+```
+
+退出码非 0 不许进批量。图层面再按"帽型 → 发式 → 领型"三件顺序过一遍；人物的脸可以糊，帽子不能错。

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import base64
 import importlib.util
+import json
 import re
 import subprocess
 import sys
@@ -40,6 +42,7 @@ PUBLIC_FILES = (
     "references/era-spec.md",
     "references/writing-and-review.md",
     "scripts/project_state.py",
+    "scripts/contact_sheet.py",
     "docs/ARTICLE_ALIGNMENT.md",
 )
 
@@ -76,7 +79,7 @@ class StructureTests(unittest.TestCase):
 
     def test_description_contract(self):
         skill = read("SKILL.md")
-        description = re.search(r"^description: (.+)$", skill, flags=re.MULTILINE).group(1)
+        description = re.search(r"^description: (.+)$", skill, flags=re.MULTILINE).group(1).strip().strip("'\"")
         self.assertTrue(description.startswith("Use when "), description)
         self.assertIn("DeepSeek Harness", description)
         self.assertIn("WorkBuddy", description)
@@ -216,6 +219,96 @@ class StructureTests(unittest.TestCase):
         for token in ("DeepSeek Harness", "WorkBuddy", "Kimi K3", "1M", "attachments", "shell"):
             self.assertIn(token, routing, token)
         self.assertIn("HANDOFF.md", routing)
+
+    def test_preview_channel_contract(self):
+        skill = read("SKILL.md")
+        workflow = read("references/workflow.md")
+        routing = read("references/host-routing.md")
+        readme = read("README.md")
+        for text in (skill, workflow):
+            self.assertIn("preview_channel", text)
+            self.assertIn("browser.preview", text)
+        self.assertIn("review_pane", skill)
+        self.assertIn("OpenCode", routing)
+        self.assertIn("browser.preview", routing)
+        self.assertIn("[browser.disconnected]", routing)
+        self.assertIn("预览通道", readme)
+        self.assertIn("inline_images", routing)
+
+    def test_character_anchor_candidates_selected_by_user(self):
+        skill = read("SKILL.md")
+        workflow = read("references/workflow.md")
+        readme = read("README.md")
+        routing = read("references/host-routing.md")
+        self.assertIn("2–3 anchor candidates", skill)
+        self.assertIn("preview_channel", routing)
+        self.assertIn("decisions.anchor_selection", skill)
+        self.assertIn("anchor_selection", workflow)
+        self.assertIn("characters/candidates/", skill)
+        self.assertIn("PILOT-SHEET.html", skill)
+        self.assertIn("PILOT-SHEET.html", workflow)
+        for text in (skill, workflow, readme):
+            self.assertIn("contact_sheet.py", text)
+        self.assertIn("A/B/C", readme)
+        self.assertIn("2–3", workflow)
+
+    def test_contact_sheet_builds_self_contained_sheet(self):
+        png = base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp)
+            (project / "images").mkdir()
+            (project / "characters" / "candidates").mkdir(parents=True)
+            (project / "images" / "p01.png").write_bytes(png)
+            (project / "characters" / "candidates" / "a-face.png").write_bytes(png)
+            (project / "characters" / "candidates" / "b-face.png").write_bytes(png)
+            manifest = {
+                "title": "画面基准",
+                "groups": [
+                    {
+                        "id": "P01",
+                        "name": "雨夜宫门",
+                        "candidates": [
+                            {"id": "", "images": [{"path": "images/p01.png", "label": "P01"}]}
+                        ],
+                    },
+                    {
+                        "id": "C1",
+                        "name": "胤礽",
+                        "candidates": [
+                            {"id": "A", "images": ["characters/candidates/a-face.png"]},
+                            {"id": "B", "images": ["characters/candidates/b-face.png"]},
+                        ],
+                    },
+                ],
+            }
+            (project / "sheet.json").write_text(json.dumps(manifest), encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "contact_sheet.py"),
+                    "build",
+                    str(project / "sheet.json"),
+                    str(project / "review" / "PILOT-SHEET.html"),
+                    "--record",
+                    str(project / "review" / "PILOT-REVIEW.md"),
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("WROTE", result.stdout)
+            sheet = (project / "review" / "PILOT-SHEET.html").read_text(encoding="utf-8")
+            self.assertIn("data:image/png;base64", sheet)
+            self.assertIn("1×1", sheet)
+            self.assertIn("P01", sheet)
+            self.assertIn('class="badge">A<', sheet)
+            self.assertIn('class="badge">B<', sheet)
+            record = (project / "review" / "PILOT-REVIEW.md").read_text(encoding="utf-8")
+            self.assertIn("选定：待选（A / B）", record)
+            self.assertIn("选定：待确认（通过 / 要改）", record)
 
     def test_craft_rules_are_actionable(self):
         skill = read("SKILL.md")

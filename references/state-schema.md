@@ -11,7 +11,7 @@
   "title": "Human-readable title",
   "project_root": "/absolute/project/path",
   "host": {
-    "name": "dsh|codex|workbuddy|other",
+    "name": "dsh|opencode|codex|workbuddy|other",
     "capabilities": {
       "local_files": true,
       "attachments": true,
@@ -64,11 +64,15 @@ Delivery acceptance is a separate axis and never goes into `stage_status`: `未�
   },
   "fidelity": { "value": "平衡", "source": "skill", "status": "已确认" },
   "aspect_ratio": { "value": "9:16", "source": "user", "status": "已确认" },
+  "preview_channel": { "value": "review_pane", "source": "host-probe", "status": "已确认" },
+  "anchor_selection": { "value": { "胤禛": "B", "胤礽": "A" }, "source": "user", "status": "已确认" },
   "delivery_status": { "value": "已做待验", "source": "self", "status": "进行中" }
 }
 ```
 
 `key_ref` is a pointer to the local secret store, never the secret. Valid forms: `env:NAME`, `file:~/.story-video/secrets.env#NAME`, or `host:<credential-id>`. A null `key_ref` means the provider needs no key (edge-tts).
+
+`preview_channel` is one of `review_pane` (OpenCode desktop Review pane via `browser.preview`), `inline_images` (DSH web client over a local http server), `attachment`, or `local_browser`; it is decided at START by what the operator can actually see. `anchor_selection` maps each strict character to the candidate letter the operator picked; the chosen face and body plates are then copied to the stable `characters/{name}-face.png` / `characters/{name}-body.png` names, and rejected candidates stay under `characters/candidates/`.
 
 5. Artifact paths must be absolute inside `PROJECT_STATE.json`. Public deliverables must not expose private paths.
 6. Never store plaintext API keys, cookies, login URLs, redemption codes, or tokens. Store services as `{provider, endpoint, key_ref, status}`; the key itself lives only in the local secret store.

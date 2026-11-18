@@ -12,11 +12,11 @@ Each stage has five fields:
 
 ## 运行模式（Run mode）
 
-读需求后，第一条回复用一条问答收三件：生图通道（地址 + key）、音频通道（地址 + key）、运行模式（`全自动` 推荐 / `我来选`）。两个服务问题**不带选项**，答案输入框就是入口，用户填 `地址 | key`；由技能取出后写入项目外密钥文件——不要让用户改 `secrets.env`、状态文件或任何配置。模式与两条通道写入 `decisions`，续跑沿用，不重问。两条路径共用硬门与不变式，模式只改变「谁来定、谁来确认」。
+读需求后，第一条回复用一条问答收三件：生图通道（地址 + key）、音频通道（地址 + key）、运行模式（`全自动` 推荐 / `我来选`）。两个服务问题**不带选项**，答案输入框就是入口，用户填 `地址 | key`；由技能取出后写入项目外密钥文件——不要让用户改 `secrets.env`、状态文件或任何配置。模式、两条通道与预览通道（`preview_channel`）写入 `decisions`，续跑沿用，不重问。两条路径共用硬门与不变式，模式只改变「谁来定、谁来确认」。
 
 START 先探两条生成通道的状态；问题里点明环境已有的 key，但不给点选项——答案输入框是唯一入口。地址不静默默认，问题正文给内置 URL，用户可改自建或中转；实际地址与 key 由用户填 `地址 | key` 给出。**每条通道都要实测一次，验证不过不开工**：连不上是地址/网络问题，401/403 或「缺少 key」是 key 不对，404 是路径不对；只把出错那一项带着服务端原文再问一次，另一条已验过的值不动。地址与密钥是能力问题，开场问答不算创作轮。
 
-- **`全自动`**：开场问答只收两条通道的地址与 key 和运行模式；史实尺度、语速、画幅、视觉风格、配乐、字幕、节奏由技能定并逐项记 `source: "skill"`；音色例外——开场探活通过后仍生成 5–10 个 15 秒试听、链接进对话让操作者点选（不回答则取第一个，记 `source: "skill" (defaulted)`）。START 连到 FINAL_RENDER，只保留三个停靠：开场问答、音色试听、开头 pilot；其余各门自检并把依据写进 `review/` 与 `stage_history`。只在探活失败、事实无法核验、发布授权时打断。停靠之间连续推进，任何阶段落盘后立即开下一步，不发「进度汇报后原地等提示」的回复。
+- **`全自动`**：开场问答只收两条通道的地址与 key 和运行模式；史实尺度、语速、画幅、视觉风格、配乐、字幕、节奏由技能定并逐项记 `source: "skill"`；音色例外——开场探活通过后仍生成 5–10 个 15 秒试听、经预览通道交付让操作者点选（不回答则取第一个，记 `source: "skill" (defaulted)`）。START 连到 FINAL_RENDER，只保留三个停靠：开场问答、音色试听、开头 pilot 与人物锚点候选；其余各门自检并把依据写进 `review/` 与 `stage_history`。只在探活失败、事实无法核验、发布授权时打断。停靠之间连续推进，任何阶段落盘后立即开下一步，不发「进度汇报后原地等提示」的回复。
 - **`我来选`**：开工前三轮点击问完配置，之后才生产。S 轮就是首条回复：生图地址 + key、音频地址 + key、运行模式。A 轮：史实尺度（正史向/平衡/戏说）、画幅（9:16/16:9）、视觉风格（电影写实/国画工笔/连环画/给参考图）、图片节奏（10–12 秒/6–8 秒）。B 轮：音色（5–10 个 15 秒试听）、语速（舒缓/标准/明快）、配乐（无/轻铺底）。连同 0 配置共五个停靠。
 
 中途硬门在两种模式下都要留证，缺证据等于没过门：
@@ -25,10 +25,10 @@ START 先探两条生成通道的状态；问题里点明环境已有的 key，�
 |---|---|
 | 终稿 | `review/SCRIPT-REVIEW.md` 与差异核对结论 |
 | 音色与语速（45–60 秒样音） | `audio/` 试听集、样音、选定记录、发音表；试听集两种模式都点选（0.5 停靠），样音我来选等点击、全自动自检 |
-| pilot 与人物锚点 | pilot 图、`VISUAL_STYLE.md`、`characters/` 锚点、`review/PILOT-REVIEW.md` 的通过记录；两种模式都等用户点击 |
+| pilot 与人物锚点 | pilot 图、`VISUAL_STYLE.md`、`characters/candidates/` 的 2–3 个候选、`review/PILOT-SHEET.html`、`review/PILOT-REVIEW.md` 的选定字母与通过记录；两种模式都等用户点击 |
 | 预览 | 预览文件、结构检查；我来选看装配好的视频，全自动记抽帧检查结论 |
 
-**图片只在开头验收一次。** 生成 3–5 张 pilot 与人物锚点后，拼成带 shot ID 的接触表，**把图直接渲染进回复（真图，不是路径、不是「已存到 review/…」）**，问一次 `通过` / `要改`；`要改` 只重出被拒的行，并只展示替换后的那一组。通过后，单张图、QC 替换、批量出图都不再向用户提问；技能按 `ERA_SPEC.md`、冻结风格与分镜自检，结论写 `review/IMAGE-QC.md`，失败自动重出。只有装配好的预览与最终成片再交给用户。
+**图片只在开头验收一次，而且操作者必须真的看得到。** 生成 3–5 张 pilot，以及每个常驻人物的 2–3 个锚点候选（面部 + 全身同一人，A/B/C 标号，通过 `ERA_SPEC.md` 与写实检查的候选全部保留，不替用户挑「更好的那个」）。用 `scripts/contact_sheet.py` 拼成带 shot ID 与候选字母的接触表，存 `review/PILOT-SHEET.html`，然后通过 START 记录的预览通道交付：OpenCode 桌面用 `browser.preview`，DSH 用本地 http 服务 + 内联图，其他宿主用附件或本机浏览器。**路径、文件卡片、「已存到 review/…」都不算预览。** 先问每个严格人物选 A/B/C（最多三问一轮，超过三个角色续一轮），再问一次 pilot 的 `通过` / `要改`；`要改` 或 `都不要` 只重出被拒的行，并只展示替换后的那一组。选定字母写 `decisions.anchor_selection` 与 `review/PILOT-REVIEW.md`，选定面/全身图复制成稳定文件名 `characters/{name}-face.png` / `{name}-body.png`，被拒候选留在 `characters/candidates/`。通过后，单张图、QC 替换、批量出图都不再向用户提问；技能按 `ERA_SPEC.md`、冻结风格与分镜自检，结论写 `review/IMAGE-QC.md`，失败自动重出。只有装配好的预览与最终成片再交给用户。
 
 ## 批次确认（Confirmation batches）
 
@@ -37,9 +37,9 @@ START 先探两条生成通道的状态；问题里点明环境已有的 key，�
 | 停靠 | 覆盖阶段 | 定什么 |
 |---|---|---|
 | 0 配置（两种模式都停） | START → BRIEF → BENCHMARKS | 生图地址+key、音频地址+key、运行模式（全自动到此为止）；我来选再加史实尺度、画幅、视觉风格、图片节奏、音色、语速、配乐（三轮点击，开工前一次问完） |
-| 0.5 音色试听（全自动也停） | VOICE 预选 | 5–10 个 15 秒试听链接进对话，点选一个音色；我来选已在 0 轮 B 问过，不停 |
+| 0.5 音色试听（全自动也停） | VOICE 预选 | 5–10 个 15 秒试听经预览通道交付，点选一个音色；我来选已在 0 轮 B 问过，不停 |
 | 1 文稿+样音 | WRITING_PACK → SCRIPT → VOICE | 终稿 + 45–60 秒样音（通过/要改） |
-| 2 画面基准（全自动也停） | STORYBOARD → VISUAL_STYLE → CHARACTER_ANCHORS | 看 3–5 张 pilot 与人物锚点（通过/要改）；通过后才写完整提示词清单 |
+| 2 画面基准（全自动也停） | STORYBOARD → VISUAL_STYLE → CHARACTER_ANCHORS | 看 3–5 张 pilot 与每个人物的 2–3 个锚点候选（选 A/B/C + 通过/要改）；通过后才写完整提示词清单 |
 | 3 预览 | IMAGE_PROMPTS → IMAGE_GENERATION → ASSET_QC → MUSIC → PREVIEW | 出图、QC、配乐全自动；只看装配好的预览（通过/要改） |
 | 4 成片 | FINAL_RENDER | 成片验收；发布另一次授权 |
 
@@ -65,13 +65,13 @@ START 先探两条生成通道的状态；问题里点明环境已有的 key，�
 
 **Enter when:** the Skill is invoked.
 
-**Skill acts:** locate or initialize `PROJECT_STATE.json`; inspect only the supplied project scope; identify host capabilities and existing artifacts; classify new versus resumed work. Probe both channels once so an already-configured address and key can lead the options, then open with one clickable round that collects each channel's address and key (default image: 阿里云 MaaS `qwen-image-2.1-turbo` at `https://maas.qianwenaiapi.com/compatible-mode/v1`; default audio: 小米 MiMo TTS `mimo-v2.5-tts` at `https://api.xiaomimimo.com/v1`, token-plan keys at `https://token-plan-cn.xiaomimimo.com/v1`; alternatives: OpenAI 兼容 / ComfyUI / 自定义 for images, edge-tts / Azure / ElevenLabs / OpenAI / MiniMax / 自定义 for audio) together with the run mode. The address is always confirmed, never silently defaulted: the option carries the built-in URL, and a public, private/self-hosted, or relay URL can be typed in — plain http, LAN IP, internal DNS, port, path prefix, and self-signed TLS are all valid, and a self-hosted service may have no key. Probe from the host that will call the API, not from the user's browser; a failing private probe asks about LAN/VPN reachability instead of changing the address. Write each key to `~/.story-video/secrets.env` outside the project and record only `key_ref`. Record the image service profile with the probe: model, maximum resolution, and whether it accepts a reference image or img2img. Verify with one cheap probe.
+**Skill acts:** locate or initialize `PROJECT_STATE.json`; inspect only the supplied project scope; identify host capabilities and existing artifacts — including which preview channel can actually put a generated image in front of the operator (`review_pane` for the OpenCode desktop Review pane via `browser.preview`, `inline_images` for the DSH web client, `attachment` or `local_browser` elsewhere) — and record it as `decisions.preview_channel`; classify new versus resumed work. Probe both channels once so an already-configured address and key can lead the options, then open with one clickable round that collects each channel's address and key (default image: 阿里云 MaaS `qwen-image-2.1-turbo` at `https://maas.qianwenaiapi.com/compatible-mode/v1`; default audio: 小米 MiMo TTS `mimo-v2.5-tts` at `https://api.xiaomimimo.com/v1`, token-plan keys at `https://token-plan-cn.xiaomimimo.com/v1`; alternatives: OpenAI 兼容 / ComfyUI / 自定义 for images, edge-tts / Azure / ElevenLabs / OpenAI / MiniMax / 自定义 for audio) together with the run mode. The address is always confirmed, never silently defaulted: the option carries the built-in URL, and a public, private/self-hosted, or relay URL can be typed in — plain http, LAN IP, internal DNS, port, path prefix, and self-signed TLS are all valid, and a self-hosted service may have no key. Probe from the host that will call the API, not from the user's browser; a failing private probe asks about LAN/VPN reachability instead of changing the address. Write each key to `~/.story-video/secrets.env` outside the project and record only `key_ref`. Record the image service profile with the probe: model, maximum resolution, and whether it accepts a reference image or img2img. Verify with one cheap probe.
 
 **Ask now:** the opening round: 生图地址+key、音频地址+key、运行模式. The two service questions carry no options; the user types `地址 | key` into the answer field, and the Skill writes the secret file from that answer — never ask the user to edit a file. If undiscoverable, also ask for the project folder and whether this is new or continued work. Address, key, and run mode are capability questions, not creative ones.
 
 **Deliver:** current-state summary, confirmed host and services, missing capability list, and first actionable request.
 
-**Gate:** project root, resume point, both service channels (address + key_ref), and the run mode are recorded; a key exists only outside the project.（批次 0 配置 · 停靠）
+**Gate:** project root, resume point, both service channels (address + key_ref), the run mode, and `decisions.preview_channel` are recorded; a key exists only outside the project.（批次 0 配置 · 停靠）
 
 ## BRIEF
 
@@ -127,9 +127,9 @@ START 先探两条生成通道的状态；问题里点明环境已有的 key，�
 
 **Skill acts:** TTS 服务与 key 在开场问答定好；这里只验证可用性，不再索要密钥。用同一段约 15 秒文本生成 5–10 个音色试听，供配置轮点选；这 15 秒只用来选音色，不是样音。按 `assets/pronunciation-map.md` 建 `audio/PRONUNCIATION.md`：先全量扫描终稿里 `[胤允]`+生僻字的名字 token（含 允禩 这类改名写法），逐个入表或进白名单、key 与脚本 codepoint 一致，替换词按字典读音核验（胤禔 = zhī 不是 tí；胤祄 = jiè），未覆盖清单落盘当证据；易误读的专名给口语替换，只用于 TTS 输入，剧本/字幕/文字卡保留原字。音色定后用语速试听（30–60 秒）确认舒缓/标准/明快。然后合成约 45–60 秒样音（三到五段 = 开头 + 中段专名最密段落拼接，不只取开头），不合成整段。样音确认后合成剩余旁白，回读实测时长，与写作包估算差超过 ±10% 要报告。
 
-**Ask now:** 我来选：音色与语速在配置轮点击，样音在文稿停靠点「通过/要改」；全自动：音色仍要点选——5–10 个 15 秒试听落盘后把链接放进对话，一次点击选一个（不回答则默认第一个并记 `source: "skill" (defaulted)`），语速按默认。
+**Ask now:** 我来选：音色与语速在配置轮点击，样音在文稿停靠点「通过/要改」；全自动：音色仍要点选——5–10 个 15 秒试听落盘后经预览通道交付，一次点击选一个（不回答则默认第一个并记 `source: "skill" (defaulted)`），语速按默认。
 
-**Deliver:** 15 秒试听集、45–60 秒样音、音色/语速记录、`audio/PRONUNCIATION.md`、整段旁白、实测时长对照、可用时的时间戳。
+**Deliver:** 经预览通道交付的 15 秒试听集、45–60 秒样音、音色/语速记录、`audio/PRONUNCIATION.md`、整段旁白、实测时长对照、可用时的时间戳。
 
 **Gate:** 样音通过后才合成整段（我来选等点击；全自动自检时长、发音、响度并留证）。模型或参数建议不算验收。
 
@@ -161,13 +161,13 @@ START 先探两条生成通道的状态；问题里点明环境已有的 key，�
 
 **Enter when:** VISUAL_STYLE is confirmed.
 
-**Skill acts:** detect recurring characters and decide whether strict identity continuity is needed. For each strict character, create a face anchor and full-body anchor with age, body, clothing, footwear, and era details. When `ERA_SPEC.md` exists, the anchor's clothing, hairstyle, and footwear must come from its section-2 identity table — the anchor is where a wrong costume would propagate into every later image, so verify it against the table before showing it. If there are no recurring characters, this stage only prepares the pilot contact sheet.
+**Skill acts:** detect recurring characters and decide whether strict identity continuity is needed. For each strict character, generate 2–3 anchor candidates; each candidate is a face plate plus a full-body plate of the same person (age, body, clothing, footwear, era details in both). When `ERA_SPEC.md` exists, the candidate's clothing, hairstyle, and footwear must come from its section-2 identity table — the anchor is where a wrong costume would propagate into every later image, so check every candidate against the table and drop the ones that fail before showing anything. Label the survivors A/B/C in a stable order. Never pre-select one and show only that: the choice belongs to the operator. If there are no recurring characters, this stage only prepares the pilot contact sheet.
 
-**Ask now:** show the three-to-five pilot images and any anchors as one contact sheet with shot IDs **rendered inline in the reply — actual images, not file paths, not a "sheet saved at…" line** — and ask one clickable question: `通过` / `要改`. On `要改`, regenerate only the rejected rows and show the replacement set once; accepted rows are not reopened.
+**Ask now:** build one sheet with `scripts/contact_sheet.py` (`review/pilot-sheet.json` → `review/PILOT-SHEET.html`, record to `review/PILOT-REVIEW.md`) containing the three-to-five pilot shots with shot IDs and every anchor candidate with its letter. Deliver it through the preview channel recorded at START — `browser.preview` for the OpenCode Review pane, inline images in DSH, attachment or local browser elsewhere; a path, a file card, or "sheet saved at…" is not a preview, and the gate is not answered until the operator confirms seeing it. Then ask in rounds of at most three questions: one per strict character with `A` / `B` / `C` (default `A`), continuing in another round if more than three characters need a choice; then one `通过` / `要改` for the pilot. On `要改` or `都不要`, regenerate only the rejected rows and show the replacement set once; accepted rows are not reopened.
 
-**Deliver:** `characters/` anchor images and character cards, plus the pilot contact sheet and the user's decision in `review/PILOT-REVIEW.md`.
+**Deliver:** `characters/` with 2–3 candidates per character under `characters/candidates/`, the chosen pair copied to `characters/{name}-face.png` / `{name}-body.png`, character cards, `review/PILOT-SHEET.html`, and the selection record in `review/PILOT-REVIEW.md` plus `decisions.anchor_selection`.
 
-**Gate:** the user has clicked `通过` on the pilot and anchor set; required anchors exist, or the anchor part is explicitly `已跳过`. A `要改` loops only the rejected rows. This is the only image gate in the project.（批次 2 · 等用户点击；全自动也停）
+**Gate:** the operator has picked a letter for every strict character and clicked `通过` on the pilot; required anchors exist under their stable names, or the anchor part is explicitly `已跳过`. A `要改` loops only the rejected rows. This is the only image gate in the project.（批次 2 · 等用户点击；全自动也停）
 
 ## IMAGE_PROMPTS
 
@@ -221,11 +221,11 @@ START 先探两条生成通道的状态；问题里点明环境已有的 key，�
 
 **Enter when:** image QC and music are complete.
 
-**Skill acts:** assemble the project, preferably with HyperFrames when available. In a host with the bundled HyperFrames skills, load the `hyperframes` mandatory entry point before touching the composition and follow its routing instructions. Align images, subtitles, text cards, and music to narration timestamps. Run structural checks and create a reviewable preview. Do not final-render yet.
+**Skill acts:** assemble the project, preferably with HyperFrames when available. In a host with the bundled HyperFrames skills, load the `hyperframes` mandatory entry point before touching the composition and follow its routing instructions. Align images, subtitles, text cards, and music to narration timestamps. Run structural checks and create a reviewable preview. Deliver it through `decisions.preview_channel` — `browser.preview` in the OpenCode Review pane, a local http server in DSH, attachment or local browser elsewhere; a path alone is not a preview. Do not final-render yet.
 
-**Ask now:** in `我来选`, ask for approval of the assembled preview — pacing, subtitles, story, ending — not individual images. In `全自动`, do not ask.
+**Ask now:** in `我来选`, present the assembled preview through that channel and ask for approval — pacing, subtitles, story, ending — not individual images. In `全自动`, do not ask.
 
-**Deliver:** preview, review board or representative frames, and issue list.
+**Deliver:** preview delivered through the recorded channel, review board or representative frames, and issue list.
 
 **Gate:** user approves the assembled preview in `我来选`; in `全自动` the frame check is recorded and the run continues. A general earlier “go ahead” is not sufficient.（批次 3 · 停靠点·硬门：只验收装配好的视频，不验收单张图）
 
