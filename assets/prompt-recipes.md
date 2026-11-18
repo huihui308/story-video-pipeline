@@ -95,6 +95,39 @@ A group shot needs `distinct faces, real casting, no repeated face`. A hands-vis
 
 **Prestige period-drama look.** When the brief asks for a TV-drama still, name the production level rather than the genre: `prestige historical drama, on-set production still, elaborate set dressing, practical candlelight, restrained grade, 35mm`. Add `not a short-form drama, not a studio portrait, not costume rental` to the negative list. "古装/清朝/电影感" alone collapses to a generic costume portrait; the production-level words are what separate a drama still from a photo studio.
 
+## 画面密度：别把镜头压成单层静物
+
+单光源暗调最容易踩的坑，不是黑，是**空**：背景被压成一堵黑幕，中景只有一件东西，前景什么也没有，观众看到的就是"一张图"，不是一个空间。这一条和曝光守卫是两回事——曝光管亮不亮，密度管有没有纵深。
+
+硬规则，每条人物/物件提示词都要满足：
+
+1. **三平面写全**：前景给一件遮挡物或压边物（门框、纱帘下摆、栏杆、树影、烛台边缘、器物的一角）；中景是主体和动作；背景给建筑、光源或人群。少一层，画面就塌成一张贴纸。
+2. **陈设两到三件**：条案、宫灯、屏风、炭盆、铜盆、书架、卷轴、茶盏、棋盘、香炉。不是装饰，是尺度参照和纵深线索。
+3. **人物镜头里再加一个人影**：随从、候着的差役、远处走过的宫人。单人独照只留给刻意的孤绝时刻，不能整片都是。
+4. **空气感**：烟、尘、蒸汽、雪、雨、哈气，选一样。暗调画面里没有介质，前后景就分不开。
+5. **景别要换**：每 8–10 镜至少一个全景定场；物件特写不连续超过两个；特写必须带环境线索（桌沿、窗格、烛台），不能是一张浮在黑色里的纸。
+
+反例（单层静物，出来一定单薄）：
+
+```
+案上摊着一本空白的奏折，一支朱笔搁在旁边
+```
+
+正例（同一件事，三个平面 + 陈设 + 介质）：
+
+```
+前景是笔架与砚台压住画面下缘，中景三本奏折并排摊开、纸面空白，一支朱笔搁在青瓷笔架上，背景是紫禁城书房的窗棂与半架线装书，烛火从右下打上来，空气里有浮尘
+```
+
+```mermaid
+flowchart LR
+  A[前景：遮挡/压边] --> B[中景：主体+动作]
+  B --> C[背景：建筑/光/人群]
+  A --> D[陈设 2-3 件]
+  C --> D
+  D --> E[空气感 1-2 样]
+```
+
 ## Delivery quality floor
 
 - Resolution: for 9:16 request at least `1280×2276`, prefer `1440×2560`; for 16:9 at least `2276×1280`. Upscaling does not add detail, so a service that only returns 1024-wide images is a capability gap, not a style choice.

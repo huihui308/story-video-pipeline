@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Lint image prompts for dynasty slips before an image batch is spent.
 
+Two checks run here: the costume triad for Qing (hat shape, hair, robe) and a
+density warning for frames that would collapse into a single object on a black
+field. Both catch prompts that are wrong before any image is paid for.
+
 Image models default to Ming/Song when a prompt only says "清代" or "古装":
 the hat comes back as a black gauze cap, the hair as a topknot, the robe as a
 cross-collar daopao. That failure is invisible at thumbnail size and only shows
@@ -59,9 +63,21 @@ WARN = [
 # Shots with no person in frame are exempt from the costume check.
 NO_PERSON = re.compile(r"无人物|画面无人|空镜|no people in frame")
 
+# Depth evidence: a frame with one subject on a black field reads as a flat card.
+SPACE = re.compile(
+    r"前景|中景|背景|近处|远处|身后|两旁人|两旁|两侧|角落|地面|墙上|窗外|"
+    r"廊下|案边|画面上缘|下缘|床帐|帷帐|屏风|门框|窗棂|书架|宫灯|栏杆"
+)
 
-def lint(text: str, era: str):
+
+# Object+剪影 compounds are not a person; strip them before the person test.
+NORMALISE = [("书架剪影", "书架"), ("树影", "树"), ("灯影", "灯"), ("窗影", "窗")]
+
+
+def lint(text: str, era: str, density: bool = True):
     fatal, warn = [], []
+    for a, b in NORMALISE:
+        text = text.replace(a, b)
     has_person = bool(PERSON.search(text)) and not NO_PERSON.search(text)
 
     for word, why in FATAL:
@@ -70,6 +86,11 @@ def lint(text: str, era: str):
     for word, why in WARN:
         if word in text:
             warn.append(f"可疑词「{word}」：{why}")
+
+    if density and not SPACE.search(text):
+        warn.append("没写空间层次（前景/中景/背景、窗外、廊下、屏风…），容易压成单层静物")
+    if density and len(text) < 60:
+        warn.append("提示词过短，陈设与空气感不够，画面容易单薄")
 
     if era == "qing" and has_person:
         if not HAT.search(text):
@@ -87,6 +108,7 @@ def main() -> int:
     ap.add_argument("--prompts-dir", default=None)
     ap.add_argument("--era", "-e", default="qing", choices=["qing", "other", "none"])
     ap.add_argument("--strict", action="store_true", help="treat warnings as fatal")
+    ap.add_argument("--no-density", action="store_true", help="skip the picture-density warnings")
     a = ap.parse_args()
 
     targets = []
@@ -105,7 +127,7 @@ def main() -> int:
     bad = 0
     for f in targets:
         text = f.read_text(encoding="utf-8")
-        fatal, warn, has_person = lint(text, a.era)
+        fatal, warn, has_person = lint(text, a.era, density=not a.no_density)
         if a.strict:
             fatal, warn = fatal + warn, []
         if fatal:

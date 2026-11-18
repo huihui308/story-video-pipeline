@@ -222,7 +222,7 @@ cp -r .claude/skills/story-video-pipeline ~/.claude/skills/story-video-pipeline
     writing-and-review.md      写作包组织与定点审稿
   scripts/project_state.py     init / validate / repair / summary
   scripts/contact_sheet.py     生成自包含 HTML 接触表（候选字母 + 尺寸 + 选定记录）
-  scripts/era_lint.py          批量前扫提示词：清代人物必须写帽型/发式/袍式，命中乌纱帽、展角、束发、道袍即拒
+  scripts/era_lint.py          批量前扫提示词：清代人物必须写帽型/发式/袍式，命中乌纱帽、展角、束发、道袍即拒；没写空间层次会告警单层静物
   docs/ARTICLE_ALIGNMENT.md    教程要求与 Skill 落点对照
   tests/                       结构、引导合同、状态机一致性测试
 ```
